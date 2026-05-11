@@ -382,7 +382,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
     if (result.success) {
       for (const col of Object.values(result.columns)) {
         if (col instanceof Float64Array || col instanceof Uint8Array) {
-          transferable.push(col.buffer)
+          transferable.push(col.buffer as Transferable)
         }
       }
     }

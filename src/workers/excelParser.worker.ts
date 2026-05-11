@@ -115,8 +115,10 @@ function fillColumn(
       return undefined
     }
   } catch (err) {
-    if (col instanceof Float64Array || col instanceof Uint8Array) {
-      col[idx] = 0
+    if (col instanceof Float64Array) {
+      (col as Float64Array)[idx] = 0
+    } else if (col instanceof Uint8Array) {
+      (col as Uint8Array)[idx] = 0
     } else {
       (col as string[])[idx] = ''
     }
@@ -279,7 +281,7 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     checksums: {
       fileHash: calculateChecksum(columns, 'na302'),
       rowCount: n,
-      sumPremi: premiCol.reduce((a, b) => new Decimal(a).plus(new Decimal(b)), new Decimal(0)).toString(),
+      sumPremi: (premiCol.reduce((a, b) => a + b, 0) as number).toString(),
     },
   }
 }
@@ -450,7 +452,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
     if (result.success) {
       for (const col of Object.values(result.columns)) {
         if (col instanceof Float64Array || col instanceof Uint8Array) {
-          transferable.push(col.buffer)
+          transferable.push(col.buffer as Transferable)
         }
       }
     }
