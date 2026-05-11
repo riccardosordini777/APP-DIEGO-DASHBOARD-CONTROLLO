@@ -50,7 +50,7 @@ function safeParseDateMs(val: unknown): NumericParseResult {
   return isNaN(ms) ? { value: NaN, error: `formato data sconosciuto: ${s}` } : { value: ms }
 }
 
-function safeParseYesNo(val: unknown): ParseResult {
+function safeParseYesNo(val: unknown): NumericParseResult {
   if (val === null || val === undefined || val === '') return { value: 0 }
   const s = String(val).trim().toUpperCase()
   if (['SI', 'SÌ', 'YES', 'Y', '1', 'TRUE', 'S'].includes(s)) return { value: 1 }
