@@ -7,9 +7,9 @@ import type { ModuleId, ParsedColumns, FieldTypeMap, ColumnArray } from '../stor
 
 // === Sanitize con error tracking ==================================================
 
-interface ParseResult { value: number; error?: string; decimalValue?: Decimal }
+interface NumericParseResult { value: number; error?: string; decimalValue?: Decimal }
 
-function safeParseNumber(val: unknown): ParseResult {
+function safeParseNumber(val: unknown): NumericParseResult {
   if (typeof val === 'number') {
     try {
       const d = new Decimal(val)
@@ -32,7 +32,7 @@ function safeParseNumber(val: unknown): ParseResult {
   }
 }
 
-function safeParseDateMs(val: unknown): ParseResult {
+function safeParseDateMs(val: unknown): NumericParseResult {
   if (val === null || val === undefined || val === '') return { value: NaN }
   if (typeof val === 'number' && val > 1) {
     const ms = (val - 25569) * 86400 * 1000
@@ -362,7 +362,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
   try {
     const moduleId = detectModuleFromFilename(filename)
     if (!moduleId) {
-      const msg: ParseError = {
+      const msg: ParseErrorResult = {
         success: false,
         error: `File "${filename}": nome non riconosciuto. Deve contenere SI014, NA013, NA302 o NA108`,
         filename,
@@ -378,7 +378,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
         : parseGeneric(moduleId, workbook, filename)
 
     // Costruisci transferable list (solo ArrayBuffer dei Typed Arrays)
-    const transferable: ArrayBuffer[] = []
+    const transferable: Transferable[] = []
     if (result.success) {
       for (const col of Object.values(result.columns)) {
         if (col instanceof Float64Array || col instanceof Uint8Array) {
@@ -389,7 +389,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
 
     ctx.postMessage(result, transferable)
   } catch (err) {
-    const msg: ParseError = {
+    const msg: ParseErrorResult = {
       success: false,
       error: err instanceof Error ? err.message : String(err),
       filename,

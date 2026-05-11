@@ -115,7 +115,11 @@ function fillColumn(
       return undefined
     }
   } catch (err) {
-    col[idx instanceof Float64Array || col instanceof Uint8Array ? 0 : ''] as never
+    if (col instanceof Float64Array || col instanceof Uint8Array) {
+      col[idx] = 0
+    } else {
+      (col as string[])[idx] = ''
+    }
     return `eccezione interno: ${err}`
   }
 }
@@ -275,7 +279,7 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     checksums: {
       fileHash: calculateChecksum(columns, 'na302'),
       rowCount: n,
-      sumPremi: premiCol.reduce((a, b) => new Decimal(a).plus(b)).toString(),
+      sumPremi: premiCol.reduce((a, b) => new Decimal(a).plus(new Decimal(b)), new Decimal(0)).toString(),
     },
   }
 }
@@ -442,7 +446,7 @@ ctx.onmessage = (e: MessageEvent<{ buffer: ArrayBuffer; filename: string }>) => 
         : parseGeneric(moduleId, workbook, filename)
 
     // === Transferable Objects: Sposta ownership degli array al main thread ===
-    const transferable: ArrayBuffer[] = []
+    const transferable: Transferable[] = []
     if (result.success) {
       for (const col of Object.values(result.columns)) {
         if (col instanceof Float64Array || col instanceof Uint8Array) {
