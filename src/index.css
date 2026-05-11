@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Layout surfaces === */
+  --color-background: #050507;
+  --color-surface: #0a0a0b;
+  --color-card: #121214;
+  --color-card-foreground: #e4e4e7;
+
+  /* === Text === */
+  --color-foreground: #e4e4e7;
+  --color-muted-foreground: #71717a;
+
+  /* === Brand / Primary (electric blue) === */
+  --color-electric: #3b82f6;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+
+  /* === Secondary surfaces === */
+  --color-secondary: #1a1a1e;
+  --color-secondary-foreground: #e4e4e7;
+
+  /* === Muted surface === */
+  --color-muted: #27272a;
+
+  /* === Accent (same as secondary) === */
+  --color-accent: #1a1a1e;
+  --color-accent-foreground: #e4e4e7;
+
+  /* === Status colors === */
+  --color-accent-green: #22c55e;
+  --color-accent-red: #ef4444;
+  --color-accent-yellow: #eab308;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  /* === Borders & inputs === */
+  --color-border: #1f1f22;
+  --color-border-dim: #27272a;
+  --color-input: #27272a;
+  --color-ring: #3b82f6;
+
+  /* === Popover (for shadcn Popover/Select) === */
+  --color-popover: #18181b;
+  --color-popover-foreground: #e4e4e7;
+
+  /* === Sidebar === */
+  --color-sidebar: #0a0a0b;
+  --color-sidebar-foreground: #e4e4e7;
+  --color-sidebar-primary: #3b82f6;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #1a1a1e;
+  --color-sidebar-accent-foreground: #e4e4e7;
+  --color-sidebar-border: #1f1f22;
+  --color-sidebar-ring: #3b82f6;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    background-color: #050507;
+    color: #e4e4e7;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
+  #root { height: 100vh; overflow: hidden; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
