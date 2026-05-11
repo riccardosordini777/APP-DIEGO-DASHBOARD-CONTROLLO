@@ -191,11 +191,14 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     const premioVal =
       typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
 
-    if (cell1 === 'Portafoglio AC') {
+    // "Portafoglio Fine Anno" = AC (anno corrente), "Portafoglio Fine Anno Prec." = AP
+    const isAC = cell1 === 'Portafoglio AC' || cell1 === 'Portafoglio Fine Anno'
+    const isAP = cell1 === 'Portafoglio AP' || cell1 === 'Portafoglio Fine Anno Prec.' || cell1 === 'Portafoglio Fine Anno Prec'
+    if (isAC) {
       const existing = pvMap.get(currentPV)
       if (existing) existing.premi = premioVal
       else pvMap.set(currentPV, { premi: premioVal, ap: 0 })
-    } else if (cell1 === 'Portafoglio AP') {
+    } else if (isAP) {
       const existing = pvMap.get(currentPV)
       if (existing) existing.ap = premioVal
       else pvMap.set(currentPV, { premi: 0, ap: premioVal })
