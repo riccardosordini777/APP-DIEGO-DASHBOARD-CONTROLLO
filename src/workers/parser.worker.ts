@@ -152,9 +152,17 @@ export type ParseResult = ParseSuccess | ParseErrorResult
 // === Parser specializzato NA302 ====================================================
 
 function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
-  const sheetName =
-    workbook.SheetNames.find((s) => s.toLowerCase().includes('punti vendita')) ??
-    workbook.SheetNames[0]
+  // NA302 ha 3 sheet (Riepilogo, Punti Vendita, Produttori)
+  // Leggi il Riepilogo che ha struttura: row headers con "RAMI DANNI", colonna "TOTALE"
+  const sheetName = 'Riepilogo'
+  if (!workbook.Sheets[sheetName]) {
+    return {
+      success: false,
+      error: `Sheet "${sheetName}" non trovato nel file`,
+      filename,
+    }
+  }
+
   const ws = workbook.Sheets[sheetName]
   const raw = XLSX.utils.sheet_to_json(ws, {
     header: 1,
@@ -162,80 +170,70 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     raw: true,
   }) as unknown[][]
 
-  console.error(`[NA302] Sheet: ${sheetName}, rows: ${raw.length}`)
+  if (raw.length < 3) {
+    return {
+      success: false,
+      error: `File "${filename}": Riepilogo ha < 3 righe`,
+      filename,
+    }
+  }
 
-  // O(n) pivot via Map invece di rows.find() O(n²)
-  const pvMap = new Map<string, { premi: number; ap: number }>()
-  let currentPV = ''
+  // Trova la riga header che contiene "RAMI DANNI"
+  let headerRowIdx = -1
   let totaleColIdx = -1
-
   for (let i = 0; i < raw.length; i++) {
     const row = raw[i] as unknown[]
-    const cell1 = String(row[1] ?? '').trim()
-
-    if (cell1.startsWith('Punto Vendita:')) {
-      currentPV = cell1.replace('Punto Vendita:', '').trim()
-      totaleColIdx = -1
-      console.error(`[NA302] Found PV: ${currentPV}`)
-      continue
-    }
-
-    if (cell1 === 'RAMI DANNI') {
-      for (let j = 5; j < row.length; j++) {
-        if (String(row[j]).trim() === 'TOTALE') {
+    const cell1Str = String(row[1] ?? '').trim()
+    if (cell1Str === 'RAMI DANNI') {
+      headerRowIdx = i
+      // Trova colonna "TOTALE" in questa riga
+      for (let j = 0; j < row.length; j++) {
+        if (String(row[j] ?? '').trim() === 'TOTALE') {
           totaleColIdx = j
-          console.error(`[NA302] Found TOTALE col at idx ${j}`)
           break
         }
       }
-      continue
-    }
-
-    if (!currentPV || totaleColIdx < 0) continue
-    const premioVal =
-      typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
-
-    // "Portafoglio Fine Anno" = AC (anno corrente), "Portafoglio Fine Anno Prec." = AP
-    const isAC = cell1 === 'Portafoglio AC' || cell1 === 'Portafoglio Fine Anno'
-    const isAP = cell1 === 'Portafoglio AP' || cell1 === 'Portafoglio Fine Anno Prec.' || cell1 === 'Portafoglio Fine Anno Prec'
-    if (isAC) {
-      const existing = pvMap.get(currentPV)
-      if (existing) existing.premi = premioVal
-      else pvMap.set(currentPV, { premi: premioVal, ap: 0 })
-      console.error(`[NA302] ${currentPV} AC = ${premioVal}`)
-    } else if (isAP) {
-      const existing = pvMap.get(currentPV)
-      if (existing) existing.ap = premioVal
-      else pvMap.set(currentPV, { premi: 0, ap: premioVal })
-      console.error(`[NA302] ${currentPV} AP = ${premioVal}`)
+      break
     }
   }
 
-  const n = pvMap.size
-  console.error(`[NA302] Final: ${n} PV found`)
-  const pvCol: string[] = new Array(n)
-  const premiCol = new Float64Array(n)
-  const apCol = new Float64Array(n)
-  let i = 0
-  for (const [pv, d] of pvMap) {
-    pvCol[i] = pv
-    premiCol[i] = d.premi
-    apCol[i] = d.ap
-    i++
+  if (headerRowIdx < 0 || totaleColIdx < 0) {
+    return {
+      success: false,
+      error: `File "${filename}": header RAMI DANNI o colonna TOTALE non trovati`,
+      filename,
+    }
   }
 
-  // Validazione NA302
+  // Cerca le righe "Portafoglio Fine Anno" (AC) e "Portafoglio Fine Anno Prec." (AP)
+  let acVal = 0
+  let apVal = 0
+  for (let i = headerRowIdx + 1; i < raw.length; i++) {
+    const row = raw[i] as unknown[]
+    const cell1 = String(row[1] ?? '').trim()
+
+    if (cell1.startsWith('Portafoglio Fine Anno')) {
+      if (!cell1.includes('Prec')) {
+        // AC (anno corrente)
+        acVal = typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
+      } else {
+        // AP (anno precedente)
+        apVal = typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
+      }
+    }
+  }
+
+  // Output: singolo record "RIEPILOGO"
+  const pvCol: string[] = ['RIEPILOGO']
+  const premiCol = new Float64Array([acVal])
+  const apCol = new Float64Array([apVal])
+
   const errors: ValidationError[] = []
-  for (let i = 0; i < n; i++) {
-    if (!pvCol[i] || !pvCol[i].trim()) {
-      errors.push({ row: i + 1, field: 'pv', rawValue: pvCol[i], reason: 'PV vuoto' })
-    }
-    if (premiCol[i] < 0) {
-      errors.push({ row: i + 1, field: 'premi', rawValue: premiCol[i], reason: 'premio AC negativo' })
-    }
-    if (apCol[i] < 0) {
-      errors.push({ row: i + 1, field: 'annioPrecedente', rawValue: apCol[i], reason: 'premio AP negativo' })
-    }
+  if (acVal < 0) {
+    errors.push({ row: 1, field: 'premi', rawValue: acVal, reason: 'premio AC negativo' })
+  }
+  if (apVal < 0) {
+    errors.push({ row: 1, field: 'annioPrecedente', rawValue: apVal, reason: 'premio AP negativo' })
   }
 
   return {
@@ -243,7 +241,7 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     moduleId: 'na302',
     columns: { pv: pvCol, premi: premiCol, annioPrecedente: apCol },
     fieldTypes: { pv: 'string', premi: 'currency', annioPrecedente: 'currency' },
-    rowCount: n,
+    rowCount: 1,
     columnCount: 3,
     filename,
     loadedAt: Date.now(),
