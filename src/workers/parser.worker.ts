@@ -162,6 +162,8 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     raw: true,
   }) as unknown[][]
 
+  console.error(`[NA302] Sheet: ${sheetName}, rows: ${raw.length}`)
+
   // O(n) pivot via Map invece di rows.find() O(n²)
   const pvMap = new Map<string, { premi: number; ap: number }>()
   let currentPV = ''
@@ -174,6 +176,7 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
     if (cell1.startsWith('Punto Vendita:')) {
       currentPV = cell1.replace('Punto Vendita:', '').trim()
       totaleColIdx = -1
+      console.error(`[NA302] Found PV: ${currentPV}`)
       continue
     }
 
@@ -181,6 +184,7 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
       for (let j = 5; j < row.length; j++) {
         if (String(row[j]).trim() === 'TOTALE') {
           totaleColIdx = j
+          console.error(`[NA302] Found TOTALE col at idx ${j}`)
           break
         }
       }
@@ -198,14 +202,17 @@ function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
       const existing = pvMap.get(currentPV)
       if (existing) existing.premi = premioVal
       else pvMap.set(currentPV, { premi: premioVal, ap: 0 })
+      console.error(`[NA302] ${currentPV} AC = ${premioVal}`)
     } else if (isAP) {
       const existing = pvMap.get(currentPV)
       if (existing) existing.ap = premioVal
       else pvMap.set(currentPV, { premi: 0, ap: premioVal })
+      console.error(`[NA302] ${currentPV} AP = ${premioVal}`)
     }
   }
 
   const n = pvMap.size
+  console.error(`[NA302] Final: ${n} PV found`)
   const pvCol: string[] = new Array(n)
   const premiCol = new Float64Array(n)
   const apCol = new Float64Array(n)
