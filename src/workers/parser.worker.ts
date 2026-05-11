@@ -152,76 +152,54 @@ export type ParseResult = ParseSuccess | ParseErrorResult
 // === Parser specializzato NA302 ====================================================
 
 function parseNA302(workbook: XLSX.WorkBook, filename: string): ParseResult {
-  // NA302 ha 3 sheet (Riepilogo, Punti Vendita, Produttori)
-  // Leggi il Riepilogo che ha struttura: row headers con "RAMI DANNI", colonna "TOTALE"
-  const sheetName = 'Riepilogo'
-  if (!workbook.Sheets[sheetName]) {
+  // NA302 Riepilogo: struttura fissa
+  // Row 0 (index 0): VUOTA
+  // Row 1 (index 1): Header (RAMI DANNI@[1], ..., TOTALE@[10])
+  // Row 2 (index 2): Portafoglio Fine Anno (label@[1], valore@[10])
+  // Row 3 (index 3): Portafoglio Fine Anno Prec. (label@[1], valore@[10])
+  // TRAPPOLA: due colonne "TOTALE" ([10] per Rami Danni, [18] per Rami Vita) → usa indice fisso [10]
+
+  const ws = workbook.Sheets['Riepilogo']
+  if (!ws) {
     return {
       success: false,
-      error: `Sheet "${sheetName}" non trovato nel file`,
+      error: `Sheet "Riepilogo" non trovato`,
       filename,
     }
   }
 
-  const ws = workbook.Sheets[sheetName]
   const raw = XLSX.utils.sheet_to_json(ws, {
     header: 1,
     defval: '',
     raw: true,
   }) as unknown[][]
 
-  if (raw.length < 3) {
+  if (raw.length < 4) {
     return {
       success: false,
-      error: `File "${filename}": Riepilogo ha < 3 righe`,
+      error: `Riepilogo ha < 4 righe`,
       filename,
     }
   }
 
-  // Trova la riga header che contiene "RAMI DANNI"
-  let headerRowIdx = -1
-  let totaleColIdx = -1
-  for (let i = 0; i < raw.length; i++) {
-    const row = raw[i] as unknown[]
-    const cell1Str = String(row[1] ?? '').trim()
-    if (cell1Str === 'RAMI DANNI') {
-      headerRowIdx = i
-      // Trova colonna "TOTALE" in questa riga
-      for (let j = 0; j < row.length; j++) {
-        if (String(row[j] ?? '').trim() === 'TOTALE') {
-          totaleColIdx = j
-          break
-        }
-      }
-      break
-    }
-  }
+  // Leggi indici precisi: [1] = colonna label, [10] = colonna TOTALE (Rami Danni)
+  const acRow = raw[2] as unknown[]
+  const apRow = raw[3] as unknown[]
 
-  if (headerRowIdx < 0 || totaleColIdx < 0) {
+  const acLabel = String(acRow[1] ?? '').trim()
+  const apLabel = String(apRow[1] ?? '').trim()
+
+  // Valida che siano le righe giuste
+  if (!acLabel.startsWith('Portafoglio Fine Anno') || !apLabel.startsWith('Portafoglio Fine Anno Prec')) {
     return {
       success: false,
-      error: `File "${filename}": header RAMI DANNI o colonna TOTALE non trovati`,
+      error: `Righe Portafoglio non trovate ai posti attesi (row[2] e row[3])`,
       filename,
     }
   }
 
-  // Cerca le righe "Portafoglio Fine Anno" (AC) e "Portafoglio Fine Anno Prec." (AP)
-  let acVal = 0
-  let apVal = 0
-  for (let i = headerRowIdx + 1; i < raw.length; i++) {
-    const row = raw[i] as unknown[]
-    const cell1 = String(row[1] ?? '').trim()
-
-    if (cell1.startsWith('Portafoglio Fine Anno')) {
-      if (!cell1.includes('Prec')) {
-        // AC (anno corrente)
-        acVal = typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
-      } else {
-        // AP (anno precedente)
-        apVal = typeof row[totaleColIdx] === 'number' ? (row[totaleColIdx] as number) : 0
-      }
-    }
-  }
+  const acVal = typeof acRow[10] === 'number' ? (acRow[10] as number) : 0
+  const apVal = typeof apRow[10] === 'number' ? (apRow[10] as number) : 0
 
   // Output: singolo record "RIEPILOGO"
   const pvCol: string[] = ['RIEPILOGO']
