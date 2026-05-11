@@ -14,7 +14,7 @@ export function AnimatedNumber({
 }: AnimatedNumberProps) {
   const mv = useMotionValue(0)
   const spring = useSpring(mv, { stiffness: 50, damping: 12, restDelta: 0.01 })
-  const display = useTransform(spring, (n) => formatter(Math.round(n)))
+  const display = useTransform(spring, (n) => formatter(n))
 
   useEffect(() => { mv.set(value) }, [mv, value])
 

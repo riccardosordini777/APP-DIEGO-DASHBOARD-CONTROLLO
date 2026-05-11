@@ -30,7 +30,7 @@ export const SCHEMAS: Record<ModuleId, ModuleSchema> = {
     id: 'na013',
     name: 'Incassi NA013',
     columns: {
-      pv: { aliases: ['Punto Vendita Incasso', 'Punto Vendita Attuale', 'Punto Vendita Originario', 'Punto vendita', 'PV', 'Filiale', 'Punto Vendita', 'Agenzia'], required: true },
+      pv: { aliases: ['Punto Vendita Incasso', 'Punto Vendita Attuale', 'Punto Vendita Originario', 'Punto vendita', 'Punto Vendita', 'PV', 'Filiale', 'Agenzia', 'Agente', 'Filiale Pagante'], required: true },
       produttore: { aliases: ['Nominativo Produttore Incasso', 'Nominativo Produttore Attuale', 'Produttore', 'Nominativo produttore', 'Agente'] },
       premioLordo: { aliases: ['Premio Lordo Titolo', 'Premio Titolo', 'Premio lordo', 'PremioLordo', 'Premio Lordo', 'Importo', 'Premio', 'Totale'], type: 'currency' },
       scadenza: { aliases: ['Data Scadenza Titolo', 'Scadenza', 'Data scadenza', 'DataScadenza', 'Data Scadenza'], type: 'date' },
