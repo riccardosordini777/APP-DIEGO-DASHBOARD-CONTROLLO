@@ -133,7 +133,7 @@ export function Sidebar() {
         </div>
 
         {/* Module slots */}
-        <div className="space-y-1.5 flex-1 overflow-y-auto pr-2">
+        <div className="space-y-1.5 flex-1 overflow-y-auto pr-2 min-h-0">
           {MODULE_CONFIG.map(({ id, label, tab, tag }) => {
             const mod = parsedModules[id]
             const isLoaded = !!mod
