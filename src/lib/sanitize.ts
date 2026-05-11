@@ -137,8 +137,9 @@ export function parseItalianDate(value: unknown): number {
     return NaN
   }
 
-  // Numero Excel (serial date)
-  if (typeof value === 'number' && value > 1) {
+  // Numero Excel (serial date) — 0 o negativi = cella vuota/invalida
+  if (typeof value === 'number') {
+    if (value <= 0) return NaN
     const ms = (value - 25569) * 86400 * 1000
     return isFinite(ms) ? ms : NaN
   }

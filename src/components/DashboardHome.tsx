@@ -251,7 +251,8 @@ export function DashboardHome() {
       const ms = new Date(scad).getTime()
       if (!isFinite(ms) || ms >= now) return false
       const inc = r['incasso'] as string
-      return !inc || inc === ''
+      // inc è '' se vuoto, oppure "1970-01-01" se il parser ha letto 0 da cella vuota
+      return !inc || inc === '' || inc < '2000-01-01'
     }).length
   }, [na013, gf])
 
