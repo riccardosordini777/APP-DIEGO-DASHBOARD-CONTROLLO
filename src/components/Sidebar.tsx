@@ -95,7 +95,7 @@ export function Sidebar() {
       </div>
 
       {/* ── File Manager ───────────────────────────────────────────── */}
-      <div className="px-4 pt-3 pb-4 border-t border-[#1f1f22] flex-1 flex flex-col overflow-hidden">
+      <div className="px-4 pt-3 pb-4 border-t border-[#1f1f22] flex-1 flex flex-col min-h-0">
 
         {/* Section header */}
         <div className="flex items-center justify-between mb-3 px-1 flex-shrink-0">
